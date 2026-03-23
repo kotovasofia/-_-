@@ -202,10 +202,14 @@
         </div>
     </div>
 
-   <script>
-    // === 1. ПРЕДВАРИТЕЛЬНАЯ ЗАГРУЗКА АУДИО (если нужно) ===
+<script>
+    // === НАСТРОЙКИ ===
+    const SINGLE_TEXT_FILE = 'лор.txt'; // Имя вашего единственного файла с текстом
+
+    // === 1. ПРЕДВАРИТЕЛЬНАЯ ЗАГРУЗКА АУДИО ===
     const audioFilesList = [
-        'music.mp3', 'audio_loc1.mp3', 'audio_loc2.mp3', 'audio_loc3.mp3', 'audio_loc4.mp3',
+        'music.mp3', 
+        'audio_loc1.mp3', 'audio_loc2.mp3', 'audio_loc3.mp3', 'audio_loc4.mp3',
         'audio_char1.mp3', 'audio_char2.mp3', 'audio_char3.mp3', 'audio_char4.mp3', 'audio_char5.mp3',
         'audio_dialogue.mp3'
     ];
@@ -222,7 +226,6 @@
     const musicBtn = document.getElementById('music-control');
     let isMusicPlaying = true;
 
-    // Попытка запустить музыку сразу
     bgMusic.play().catch(() => {
         isMusicPlaying = false;
         musicBtn.textContent = "▶ Включить музыку";
@@ -239,46 +242,51 @@
         isMusicPlaying = !isMusicPlaying;
     });
 
-    // === 3. ОБРАБОТКА КЛИКОВ И ЗАГРУЗКА ТЕКСТА ИЗ .TXT ===
+    // === 3. ОБРАБОТКА КЛИКОВ (Один файл текста для всех) ===
     const images = document.querySelectorAll('.clickable-img, #dialogue-img');
     const textArea = document.getElementById('text-area');
     let currentAudio = null;
+    let loadedTextContent = ""; // Переменная для хранения текста из файла
 
-    // Функция чтения текстового файла
-    async function getTextFromFile(filename) {
-        if (!filename) return "Описание отсутствует.";
+    // Функция однократной загрузки текста при первом клике
+    async function loadGlobalText() {
+        if (loadedTextContent) return loadedTextContent; // Если уже загружен, возвращаем сразу
+
         try {
-            const response = await fetch(filename);
+            const response = await fetch(SINGLE_TEXT_FILE);
             if (!response.ok) throw new Error("Файл не найден");
-            return await response.text();
+            loadedTextContent = await response.text();
+            return loadedTextContent;
         } catch (error) {
             console.error("Ошибка загрузки текста:", error);
-            return "Ошибка: не удалось загрузить файл " + filename;
+            return "Ошибка: не удалось загрузить файл " + SINGLE_TEXT_FILE + ". Проверьте имя файла и кодировку (UTF-8).";
         }
     }
 
     images.forEach(img => {
         img.addEventListener('click', async function() {
             const audioSrc = this.getAttribute('data-audio');
-            const txtFile = this.getAttribute('data-txt'); // Берем имя txt файла
 
-            // 1. Загружаем и отображаем текст из файла
-            textArea.innerText = "Загрузка...";
-            const fullText = await getTextFromFile(txtFile);
+            // 1. Показываем индикатор загрузки
+            textArea.innerText = "Загрузка истории...";
+
+            // 2. Загружаем текст (при первом клике скачает файл, при последующих возьмет из памяти)
+            const fullText = await loadGlobalText();
+            
+            // 3. Вставляем текст в нижний блок
             textArea.innerText = fullText;
 
-            // 2. Визуальные эффекты (подсветка)
+            // 4. Визуальные эффекты
             images.forEach(i => i.classList.remove('playing'));
             this.classList.add('playing');
 
-            // 3. Управление аудио
+            // 5. Управление аудио
             if (currentAudio) {
                 currentAudio.pause();
                 currentAudio.currentTime = 0;
             }
 
             if (audioSrc) {
-                // Используем предзагруженное или создаем новое
                 if (window.preloadedAudios[audioSrc]) {
                     currentAudio = window.preloadedAudios[audioSrc];
                     currentAudio.currentTime = 0;
