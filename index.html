@@ -202,69 +202,98 @@
         </div>
     </div>
 
-    <script>
-        // Управление фоновой музыкой
-        const bgMusic = document.getElementById('bg-music');
-        const musicBtn = document.getElementById('music-control');
-        let isPlaying = true;
+   <script>
+    // === 1. ПРЕДВАРИТЕЛЬНАЯ ЗАГРУЗКА АУДИО (если нужно) ===
+    const audioFilesList = [
+        'music.mp3', 'audio_loc1.mp3', 'audio_loc2.mp3', 'audio_loc3.mp3', 'audio_loc4.mp3',
+        'audio_char1.mp3', 'audio_char2.mp3', 'audio_char3.mp3', 'audio_char4.mp3', 'audio_char5.mp3',
+        'audio_dialogue.mp3'
+    ];
+    
+    window.preloadedAudios = {};
+    audioFilesList.forEach(file => {
+        const audio = new Audio(file);
+        audio.preload = 'auto';
+        window.preloadedAudios[file] = audio;
+    });
 
-        // Попытка автовоспроизведения (может быть заблокирована браузером до первого клика)
-        window.addEventListener('load', () => {
-            bgMusic.play().catch(e => {
-                console.log("Автовоспроизведение заблокировано браузером. Требуется клик.");
-                isPlaying = false;
-                musicBtn.textContent = "▶ Play";
-            });
-        });
+    // === 2. УПРАВЛЕНИЕ ФОНОВОЙ МУЗЫКОЙ ===
+    const bgMusic = document.getElementById('bg-music');
+    const musicBtn = document.getElementById('music-control');
+    let isMusicPlaying = true;
 
-        musicBtn.addEventListener('click', () => {
-            if (isPlaying) {
-                bgMusic.pause();
-                musicBtn.textContent = "▶ Play";
-            } else {
-                bgMusic.play();
-                musicBtn.textContent = "⏸ Пауза";
+    // Попытка запустить музыку сразу
+    bgMusic.play().catch(() => {
+        isMusicPlaying = false;
+        musicBtn.textContent = "▶ Включить музыку";
+    });
+
+    musicBtn.addEventListener('click', () => {
+        if (isMusicPlaying) {
+            bgMusic.pause();
+            musicBtn.textContent = "▶ Включить музыку";
+        } else {
+            bgMusic.play();
+            musicBtn.textContent = "⏸ Пауза";
+        }
+        isMusicPlaying = !isMusicPlaying;
+    });
+
+    // === 3. ОБРАБОТКА КЛИКОВ И ЗАГРУЗКА ТЕКСТА ИЗ .TXT ===
+    const images = document.querySelectorAll('.clickable-img, #dialogue-img');
+    const textArea = document.getElementById('text-area');
+    let currentAudio = null;
+
+    // Функция чтения текстового файла
+    async function getTextFromFile(filename) {
+        if (!filename) return "Описание отсутствует.";
+        try {
+            const response = await fetch(filename);
+            if (!response.ok) throw new Error("Файл не найден");
+            return await response.text();
+        } catch (error) {
+            console.error("Ошибка загрузки текста:", error);
+            return "Ошибка: не удалось загрузить файл " + filename;
+        }
+    }
+
+    images.forEach(img => {
+        img.addEventListener('click', async function() {
+            const audioSrc = this.getAttribute('data-audio');
+            const txtFile = this.getAttribute('data-txt'); // Берем имя txt файла
+
+            // 1. Загружаем и отображаем текст из файла
+            textArea.innerText = "Загрузка...";
+            const fullText = await getTextFromFile(txtFile);
+            textArea.innerText = fullText;
+
+            // 2. Визуальные эффекты (подсветка)
+            images.forEach(i => i.classList.remove('playing'));
+            this.classList.add('playing');
+
+            // 3. Управление аудио
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
             }
-            isPlaying = !isPlaying;
-        });
 
-        // Обработка кликов по изображениям
-        const images = document.querySelectorAll('.clickable-img, #dialogue-img');
-        const textArea = document.getElementById('text-area');
-        let currentAudio = null;
-
-        images.forEach(img => {
-            img.addEventListener('click', function() {
-                const audioSrc = this.getAttribute('data-audio');
-                const description = this.getAttribute('data-text');
-
-                // Обновление текста
-                textArea.innerText = description;
-
-                // Сброс подсветки предыдущего активного элемента
-                images.forEach(i => i.classList.remove('playing'));
-                
-                // Подсветка текущего
-                this.classList.add('playing');
-
-                // Остановка предыдущего аудио
-                if (currentAudio) {
-                    currentAudio.pause();
+            if (audioSrc) {
+                // Используем предзагруженное или создаем новое
+                if (window.preloadedAudios[audioSrc]) {
+                    currentAudio = window.preloadedAudios[audioSrc];
                     currentAudio.currentTime = 0;
-                }
-
-                // Воспроизведение нового аудио
-                if (audioSrc) {
+                } else {
                     currentAudio = new Audio(audioSrc);
-                    currentAudio.play().catch(e => alert("Аудиофайл не найден: " + audioSrc));
-                    
-                    // Убираем подсветку когда аудио закончится
-                    currentAudio.onended = () => {
-                        this.classList.remove('playing');
-                    };
                 }
-            });
+                
+                currentAudio.play().catch(e => console.log("Ошибка аудио:", e));
+                
+                currentAudio.onended = () => {
+                    this.classList.remove('playing');
+                };
+            }
         });
-    </script>
+    });
+</script>
 </body>
 </html>
