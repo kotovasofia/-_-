@@ -340,7 +340,7 @@
     </div>
 <script>
     // === НАСТРОЙКИ ===
-    // Нам больше не нужно имя файла, текст берется из HTML
+    const SINGLE_TEXT_FILE = 'story.txt'; // Имя вашего единственного файла с текстом
 
     // === 1. ПРЕДВАРИТЕЛЬНАЯ ЗАГРУЗКА АУДИО ===
     const audioFilesList = [
@@ -378,28 +378,45 @@
         isMusicPlaying = !isMusicPlaying;
     });
 
-    // === 3. ОБРАБОТКА КЛИКОВ (Текст из скрытого блока) ===
+    // === 3. ОБРАБОТКА КЛИКОВ (Один файл текста для всех) ===
     const images = document.querySelectorAll('.clickable-img, #dialogue-img');
     const textArea = document.getElementById('text-area');
-    
-    // Получаем текст сразу при загрузке страницы из скрытого блока
-    const hiddenContent = document.getElementById('hidden-story-content');
-    const storyText = hiddenContent ? hiddenContent.innerText : "Текст истории не найден. Проверьте код.";
-    
     let currentAudio = null;
+    let loadedTextContent = ""; // Переменная для хранения текста из файла
+
+    // Функция однократной загрузки текста при первом клике
+    async function loadGlobalText() {
+        if (loadedTextContent) return loadedTextContent; // Если уже загружен, возвращаем сразу
+
+        try {
+            const response = await fetch(SINGLE_TEXT_FILE);
+            if (!response.ok) throw new Error("Файл не найден");
+            loadedTextContent = await response.text();
+            return loadedTextContent;
+        } catch (error) {
+            console.error("Ошибка загрузки текста:", error);
+            return "Ошибка: не удалось загрузить файл " + SINGLE_TEXT_FILE + ". Проверьте имя файла и кодировку (UTF-8).";
+        }
+    }
 
     images.forEach(img => {
-        img.addEventListener('click', function() {
+        img.addEventListener('click', async function() {
             const audioSrc = this.getAttribute('data-audio');
 
-            // 1. Мгновенно показываем текст (никаких задержек загрузки файла)
-            textArea.innerText = storyText;
+            // 1. Показываем индикатор загрузки
+            textArea.innerText = "Загрузка истории...";
 
-            // 2. Визуальные эффекты
+            // 2. Загружаем текст (при первом клике скачает файл, при последующих возьмет из памяти)
+            const fullText = await loadGlobalText();
+            
+            // 3. Вставляем текст в нижний блок
+            textArea.innerText = fullText;
+
+            // 4. Визуальные эффекты
             images.forEach(i => i.classList.remove('playing'));
             this.classList.add('playing');
 
-            // 3. Управление аудио
+            // 5. Управление аудио
             if (currentAudio) {
                 currentAudio.pause();
                 currentAudio.currentTime = 0;
