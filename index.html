@@ -340,7 +340,8 @@
     </div>
 <script>
     // === НАСТРОЙКИ ===
-    
+    // Нам больше не нужно имя файла, текст берется из HTML
+
     // === 1. ПРЕДВАРИТЕЛЬНАЯ ЗАГРУЗКА АУДИО ===
     const audioFilesList = [
         'music.mp3', 
@@ -377,36 +378,28 @@
         isMusicPlaying = !isMusicPlaying;
     });
 
-    // === 3. ОБРАБОТКА КЛИКОВ (ИСПРАВЛЕННАЯ ЛОГИКА) ===
+    // === 3. ОБРАБОТКА КЛИКОВ (Текст из скрытого блока) ===
     const images = document.querySelectorAll('.clickable-img, #dialogue-img');
     const textArea = document.getElementById('text-area');
     
-    // Получаем текст из скрытого блока сразу
+    // Получаем текст сразу при загрузке страницы из скрытого блока
     const hiddenContent = document.getElementById('hidden-story-content');
-    const storyText = hiddenContent ? hiddenContent.innerText : "Текст истории не найден.";
+    const storyText = hiddenContent ? hiddenContent.innerText : "Текст истории не найден. Проверьте код.";
     
     let currentAudio = null;
-    let isTextLoaded = false; // Флаг: был ли уже показан текст
 
     images.forEach(img => {
         img.addEventListener('click', function() {
             const audioSrc = this.getAttribute('data-audio');
 
-            // === ГЛАВНОЕ ИЗМЕНЕНИЕ ===
-            // Показываем текст ТОЛЬКО если он еще не был показан
-            if (!isTextLoaded) {
-                textArea.innerText = storyText;
-                isTextLoaded = true; // Запоминаем, что текст уже на экране
-            }
-            // Если текст уже показан (isTextLoaded = true), мы его НЕ трогаем.
-            // Он останется висеть, пока вы кликаете на другие картинки.
-            // ==========================
+            // 1. Мгновенно показываем текст (никаких задержек загрузки файла)
+            textArea.innerText = storyText;
 
-            // Визуальные эффекты (подсветка активной картинки)
+            // 2. Визуальные эффекты
             images.forEach(i => i.classList.remove('playing'));
             this.classList.add('playing');
 
-            // Управление аудио (меняем трек при каждом клике)
+            // 3. Управление аудио
             if (currentAudio) {
                 currentAudio.pause();
                 currentAudio.currentTime = 0;
