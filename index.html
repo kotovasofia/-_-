@@ -12,7 +12,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: white;
             overflow-x: hidden;
-            background-color: #050505; /* Цвет фона на случай долгой загрузки картинки */
+            background-color: #050510; 
         }
 
         /* Фон и музыка */
@@ -22,10 +22,18 @@
             left: 0;
             width: 100%;
             height: 100%;
-            /* Убедитесь, что файл Панорама.png лежит рядом */
-            background: url('Панорама.png') no-repeat center center/cover;
-            z-index: -1; 
+            /* ИЗМЕНЕНО: Имя файла теперь на английском */
+            background: url('background.png') no-repeat center center/cover;
+            z-index: -1;
             filter: brightness(0.5); 
+            background-color: #1a1a2e; 
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+                url('background.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            transition: background-image 0.5s ease-in-out;
         }
 
         #music-control {
@@ -94,7 +102,7 @@
             cursor: pointer;
             transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
             box-shadow: 0 4px 6px rgba(0,0,0,0.5);
-            background-color: #222; /* Заглушка пока грузится фото */
+            background-color: #222;
         }
 
         .clickable-img:hover {
@@ -146,7 +154,6 @@
             color: #d0d0d0;
         }
         
-        /* Стили для текста внутри области (наследуются из вставленного контента) */
         #text-area h1, #text-area h2, #text-area h3, #text-area h4 {
             color: #a8a8c9 !important;
             text-shadow: none;
@@ -214,14 +221,13 @@
             </div>
         </div>
 
-        <!-- Область текста (изначально пустая или с подсказкой) -->
+        <!-- Область текста -->
         <div id="text-area">
             <p style="text-align: center; color: #777; font-style: italic;">Нажмите на любое изображение выше, чтобы начать историю и воспроизвести звук.</p>
         </div>
     </div>
 
-    <!-- === СКРЫТЫЙ БЛОК С ТЕКСТОМ (ИСТОЧНИК ДАННЫХ) === -->
-    <!-- Этот блок не виден на странице, но скрипт берет текст отсюда -->
+    <!-- СКРЫТЫЙ БЛОК С ТЕКСТОМ -->
     <div id="hidden-story-content" style="display: none;">
         <header style="text-align: center; margin-bottom: 50px; border-bottom: 2px solid #4a4a6a; padding-bottom: 20px;">
             <h1 style="color: #a8a8c9; font-size: 2.5em; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 3px;">Кодекс Энтропеи</h1>
@@ -360,13 +366,11 @@
             <p>КОНЕЦ КОДЕКСА ЭНТРОПЕИ</p>
         </footer>
     </div>
-    <!-- КОНЕЦ СКРЫТОГО БЛОКА -->
 
     <script>
-        // === 1. ПРЕДВАРИТЕЛЬНАЯ ЗАГРУЗКА АУДИО (ИСПРАВЛЕННЫЙ СПИСОК) ===
-        // Имена файлов теперь точно совпадают с теми, что в HTML (data-audio)
+        // === 1. ПРЕДВАРИТЕЛЬНАЯ ЗАГРУЗКА АУДИО ===
         const audioFilesList = [
-            'фон.mp3',          // Фоновая музыка
+            'фон.mp3',
             'артефакт.mp3', 
             'текстура.mp3', 
             'архитектура.mp3', 
@@ -383,7 +387,6 @@
         audioFilesList.forEach(file => {
             const audio = new Audio(file);
             audio.preload = 'auto';
-            // Обработка ошибок загрузки, чтобы скрипт не ломался, если файла нет
             audio.onerror = () => console.warn("Не удалось загрузить аудио: " + file);
             window.preloadedAudios[file] = audio;
         });
@@ -393,7 +396,6 @@
         const musicBtn = document.getElementById('music-control');
         let isMusicPlaying = true;
 
-        // Пытаемся запустить музыку. Браузер может заблокировать это до первого клика.
         bgMusic.play().catch(() => {
             isMusicPlaying = false;
             musicBtn.textContent = "▶ Включить музыку";
@@ -414,33 +416,25 @@
         const images = document.querySelectorAll('.clickable-img, #dialogue-img');
         const textArea = document.getElementById('text-area');
         
-        // БЕРЕМ ТЕКСТ ИЗ СКРЫТОГО БЛОКА
         const hiddenContent = document.getElementById('hidden-story-content');
-        // innerText сохраняет структуру абзацев лучше, чем innerHTML для простого текста
         const storyText = hiddenContent ? hiddenContent.innerHTML : "<p>Ошибка: Текст истории не найден в коде.</p>";
         
         let currentAudio = null;
-        let isTextLoaded = false; // Флаг: был ли уже показан текст
+        let isTextLoaded = false;
 
         images.forEach(img => {
             img.addEventListener('click', function() {
                 const audioSrc = this.getAttribute('data-audio');
 
-                // === ЛОГИКА ТЕКСТА ===
-                // Показываем текст ТОЛЬКО один раз при первом клике
                 if (!isTextLoaded) {
-                    textArea.innerHTML = storyText; // Вставляем HTML контент
+                    textArea.innerHTML = storyText;
                     isTextLoaded = true;
-                    // Прокрутка к тексту для удобства
                     textArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
-                // ==========================
 
-                // Визуальные эффекты
                 images.forEach(i => i.classList.remove('playing'));
                 this.classList.add('playing');
 
-                // Управление аудио
                 if (currentAudio) {
                     currentAudio.pause();
                     currentAudio.currentTime = 0;
@@ -452,7 +446,6 @@
                         currentAudio.currentTime = 0;
                         currentAudio.play().catch(e => console.log("Ошибка воспроизведения:", e));
                     } else {
-                        // Если файл не был в списке предзагрузки (на всякий случай)
                         currentAudio = new Audio(audioSrc);
                         currentAudio.play().catch(e => console.log("Ошибка воспроизведения:", e));
                     }
@@ -463,6 +456,23 @@
                 }
             });
         });
+
+        // === 4. ПРОВЕРКА ФОНА (ДИАГНОСТИКА) ===
+        // ИЗМЕНЕНО: Имя файла теперь на английском
+        const bgContainer = document.getElementById('bg-container');
+        const bgImage = new Image();
+        bgImage.src = 'background.png'; 
+        
+        bgImage.onload = function() {
+            console.log("Фон успешно загружен!");
+        };
+        bgImage.onerror = function() {
+            console.error("ОШИБКА: Файл 'background.png' не найден!");
+            console.error("Пожалуйста, переименуйте ваш файл с фоном в 'background.png' и положите его рядом с index.html");
+            // Меняем фон на красивый градиент, если картинка не найдена
+            bgContainer.style.background = "linear-gradient(135deg, #0f0c29, #302b63, #24243e)";
+            alert("Фон не загрузился! Скорее всего, проблема в русском имени файла.\n\nПожалуйста:\n1. Переименуйте файл картинки в 'background.png'\n2. Обновите страницу.");
+        };
     </script>
 </body>
 </html>
