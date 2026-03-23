@@ -12,7 +12,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: white;
             overflow-x: hidden;
-            background-color: #050510; 
+            background-color: #000; /* Черный фон пока грузится картинка */
         }
 
         /* Фон и музыка */
@@ -22,18 +22,22 @@
             left: 0;
             width: 100%;
             height: 100%;
-            /* ИЗМЕНЕНО: Имя файла теперь на английском */
-            background: url('background.png') no-repeat center center/cover;
-            z-index: -1;
-            filter: brightness(0.5); 
-            background-color: #1a1a2e; 
-            background-image: 
-                linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
-                url('background.png');
-            background-size: cover;
-            background-position: center;
+            /* 
+               ВОТ ЗДЕСЬ ПРОВЕРЬТЕ ИМЯ ФАЙЛА. 
+               Оно должно быть идентично имени файла на компьютере.
+               Если у вас файл называется "панорама.png" (с маленькой), измените на "панорама.png".
+            */
+            background-image: url('Панорама.png');
             background-repeat: no-repeat;
-            transition: background-image 0.5s ease-in-out;
+            background-position: center;
+            background-size: cover;
+            
+            z-index: -1;
+            /* Затемняем фон на 50% */
+            filter: brightness(0.5); 
+            
+            /* Добавляем трансформацию для плавности, если нужно */
+            transform: translateZ(0);
         }
 
         #music-control {
@@ -457,22 +461,39 @@
             });
         });
 
-        // === 4. ПРОВЕРКА ФОНА (ДИАГНОСТИКА) ===
-        // ИЗМЕНЕНО: Имя файла теперь на английском
+        // === 4. ДИАГНОСТИКА ФОНА ===
+        // Проверяем загрузку фона и выводим ошибку, если не получилось
         const bgContainer = document.getElementById('bg-container');
-        const bgImage = new Image();
-        bgImage.src = 'background.png'; 
+        const testImage = new Image();
+        // Берем имя прямо из стиля, чтобы быть уверенными
+        const computedStyle = window.getComputedStyle(bgContainer);
+        const backgroundImage = computedStyle.backgroundImage;
         
-        bgImage.onload = function() {
-            console.log("Фон успешно загружен!");
-        };
-        bgImage.onerror = function() {
-            console.error("ОШИБКА: Файл 'background.png' не найден!");
-            console.error("Пожалуйста, переименуйте ваш файл с фоном в 'background.png' и положите его рядом с index.html");
-            // Меняем фон на красивый градиент, если картинка не найдена
-            bgContainer.style.background = "linear-gradient(135deg, #0f0c29, #302b63, #24243e)";
-            alert("Фон не загрузился! Скорее всего, проблема в русском имени файла.\n\nПожалуйста:\n1. Переименуйте файл картинки в 'background.png'\n2. Обновите страницу.");
-        };
+        // Извлекаем имя файла из строки вида url("Панорама.png")
+        let fileName = "";
+        if (backgroundImage && backgroundImage !== 'none') {
+            fileName = backgroundImage.replace(/url\(["']?/, '').replace(/["']?\)/, '');
+        }
+
+        if (fileName) {
+            testImage.src = fileName;
+            testImage.onload = () => console.log("Фон загружен успешно:", fileName);
+            testImage.onerror = () => {
+                console.error("ОШИБКА ЗАГРУЗКИ ФОНА!");
+                console.error("Браузер не может найти файл:", fileName);
+                console.error("Возможные причины:");
+                console.error("1. Файл лежит в другой папке.");
+                console.error("2. Имя файла отличается (проверьте заглавные буквы и расширение).");
+                console.error("3. В имени файла есть русские буквы, и браузер блокирует их при локальном запуске.");
+                
+                // Включаем резервный цвет, если картинка не грузится
+                bgContainer.style.backgroundColor = "#1a1a2e";
+                bgContainer.style.backgroundImage = "none";
+                
+                // Показываем сообщение пользователю
+                alert("Фон не загрузился!\n\nФайл: " + fileName + "\n\nПроверьте:\n1. Точное имя файла (регистр букв).\n2. Чтобы файл лежал в той же папке, что и index.html.\n\nЕсли имя файла содержит русские буквы, попробуйте переименовать его в 'bg.jpg' и поменять название в коде (строка 26).");
+            };
+        }
     </script>
 </body>
 </html>
